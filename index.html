@@ -73,6 +73,7 @@ body {
   overscroll-behavior: none;
 }
 * { box-sizing: border-box; }
+[hidden] { display: none !important; }
 button { font: inherit; color: inherit; cursor: pointer; }
 button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
@@ -147,6 +148,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 .ctl .plus { background: var(--btn-strong); color: var(--btn-strong-fg); border-color: transparent; }
 .ctl button:disabled { opacity: .35; cursor: default; }
 .ctl .plus small { font-family: var(--body); font-weight: 700; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; margin-top: 4px; }
+.ctl .plus small::first-letter { text-transform: uppercase; }
 .row { display: flex; gap: 10px; }
 .row button {
   flex: 1; border: 1px solid var(--btn-border); background: var(--btn); color: var(--btn-fg);
@@ -199,12 +201,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
   <section class="table" aria-label="Mesa">
     <div class="heads">
       <div class="head" id="head0">
-        <h2>Nosotros</h2>
+        <h2>Ali</h2>
         <span class="num" id="num0">0</span>
         <span class="phase" id="phase0">malas</span>
       </div>
       <div class="head" id="head1">
-        <h2>Ellos</h2>
+        <h2>David</h2>
         <span class="num" id="num1">0</span>
         <span class="phase" id="phase1">malas</span>
       </div>
@@ -214,12 +216,12 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
   <footer class="controls" aria-label="Controles">
     <div class="ctl">
-      <button type="button" class="minus" id="minus0" aria-label="Restar un punto a Nosotros">−</button>
-      <button type="button" class="plus" id="plus0" aria-label="Sumar un punto a Nosotros">+1<small>nosotros</small></button>
+      <button type="button" class="minus" id="minus0" aria-label="Restar un punto a Ali">−</button>
+      <button type="button" class="plus" id="plus0" aria-label="Sumar un punto a Ali">+1<small>Ali</small></button>
     </div>
     <div class="ctl">
-      <button type="button" class="minus" id="minus1" aria-label="Restar un punto a Ellos">−</button>
-      <button type="button" class="plus" id="plus1" aria-label="Sumar un punto a Ellos">+1<small>ellos</small></button>
+      <button type="button" class="minus" id="minus1" aria-label="Restar un punto a David">−</button>
+      <button type="button" class="plus" id="plus1" aria-label="Sumar un punto a David">+1<small>David</small></button>
     </div>
     <div class="row" style="grid-column: 1 / -1">
       <button type="button" id="undo" disabled>Deshacer</button>
@@ -231,7 +233,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <div class="overlay" id="confirm" hidden>
   <div class="card">
     <h3>¿Reiniciar la partida?</h3>
-    <p>Se borran los puntos de los dos equipos.</p>
+    <p>Se borran los puntos de los dos.</p>
     <div class="actions">
       <button type="button" id="confirmNo">No</button>
       <button type="button" id="confirmYes" class="primary">Sí, reiniciar</button>
@@ -241,8 +243,8 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 
 <div class="overlay" id="winner" hidden>
   <div class="card">
-    <div class="big" id="winScore">30 – 0</div>
-    <h3 id="winTitle">¡Ganó Nosotros!</h3>
+    <div class="big" id="winScore">0 – 0</div>
+    <h3 id="winTitle">¡Ganó Ali!</h3>
     <p>Partida terminada.</p>
     <div class="actions">
       <button type="button" id="winUndo">Deshacer</button>
@@ -254,7 +256,7 @@ button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
 <script>
 (function () {
   var KEY = 'truco-marcador-v1';
-  var NAMES = ['Nosotros', 'Ellos'];
+  var NAMES = ['Ali', 'David'];
   var state = { s: [0, 0], limit: 30, hist: [] };
 
   function load(saved) {

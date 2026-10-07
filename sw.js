@@ -1,5 +1,5 @@
 // Service worker: guarda la app en el teléfono para que abra sin internet.
-var CACHE = 'truco-v1';
+var CACHE = 'truco-v2';
 var FILES = ['./', './index.html', './manifest.webmanifest', './icon-180.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', function (e) {
@@ -12,17 +12,25 @@ self.addEventListener('activate', function (e) {
   }).then(function () { return self.clients.claim(); }));
 });
 
-// Primero el caché; si no está (por ejemplo las fuentes de Google), lo baja y lo guarda.
+function store(req, res) {
+  if (res && (res.ok || res.type === 'opaque')) {
+    var copy = res.clone();
+    caches.open(CACHE).then(function (c) { c.put(req, copy); });
+  }
+  return res;
+}
+
 self.addEventListener('fetch', function (e) {
   if (e.request.method !== 'GET') return;
+  var isPage = e.request.mode === 'navigate' || /index\.html$/.test(e.request.url);
+  if (isPage) {
+    // La página en sí: primero internet (para recibir actualizaciones), caché si no hay señal.
+    e.respondWith(fetch(e.request).then(function (res) { return store(e.request, res); })
+      .catch(function () { return caches.match(e.request).then(function (h) { return h || caches.match('./index.html'); }); }));
+    return;
+  }
+  // Íconos, manifest y fuentes: primero caché.
   e.respondWith(caches.match(e.request).then(function (hit) {
-    if (hit) return hit;
-    return fetch(e.request).then(function (res) {
-      if (res && (res.ok || res.type === 'opaque')) {
-        var copy = res.clone();
-        caches.open(CACHE).then(function (c) { c.put(e.request, copy); });
-      }
-      return res;
-    }).catch(function () { return caches.match('./index.html'); });
+    return hit || fetch(e.request).then(function (res) { return store(e.request, res); });
   }));
 });
