@@ -1,0 +1,435 @@
+<!doctype html>
+<html lang="es">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<meta name="mobile-web-app-capable" content="yes">
+<meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+<meta name="apple-mobile-web-app-title" content="Truco">
+<meta name="theme-color" content="#1e5a3e">
+<link rel="manifest" href="manifest.webmanifest">
+<link rel="apple-touch-icon" href="icon-180.png">
+<link rel="icon" href="icon-192.png">
+<title>Marcador de Truco</title>
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,500;12..96,700;12..96,800&family=Nunito+Sans:wght@400;600;700&display=swap">
+<style>
+/* Layout: una sola pantalla. Arriba nombres y puntaje, en el medio el paño con los fósforos
+   de los dos equipos y la raya de malas/buenas, abajo botones grandes para operar con el pulgar. */
+:root {
+  --bg: #e6ece2;          /* salvia clara, el cuarto alrededor de la mesa */
+  --fg: #152319;
+  --muted: #5b6b60;
+  --felt: #1e5a3e;        /* paño verde de la mesa */
+  --felt-deep: #164631;
+  --on-felt: #f3ebdc;     /* marfil sobre el paño */
+  --on-felt-muted: rgba(243, 235, 220, .62);
+  --rail: rgba(243, 235, 220, .28);
+  --ghost: rgba(243, 235, 220, .10);
+  --wood: #e2bd82;        /* madera del fósforo */
+  --wood-dark: #b08a52;
+  --head: #c93b2b;        /* cabeza del fósforo */
+  --accent: #c93b2b;
+  --btn: #ffffff;
+  --btn-fg: #152319;
+  --btn-border: rgba(21, 35, 25, .14);
+  --btn-strong: #152319;
+  --btn-strong-fg: #f3ebdc;
+  --overlay: rgba(10, 20, 14, .72);
+  --display: 'Bricolage Grotesque', 'Avenir Next Condensed', 'Helvetica Neue', Arial, sans-serif;
+  --body: 'Nunito Sans', 'Helvetica Neue', Arial, sans-serif;
+}
+@media (prefers-color-scheme: dark) {
+  :root:not([data-theme="light"]) {
+    --bg: #0b1511; --fg: #ece6d8; --muted: #93a398;
+    --felt: #18503a; --felt-deep: #113d2c;
+    --on-felt: #f3ebdc; --on-felt-muted: rgba(243, 235, 220, .6);
+    --rail: rgba(243, 235, 220, .3); --ghost: rgba(243, 235, 220, .1);
+    --wood: #e2bd82; --wood-dark: #b08a52; --head: #d8463a; --accent: #d8463a;
+    --btn: #1a2a21; --btn-fg: #ece6d8; --btn-border: rgba(236, 230, 216, .16);
+    --btn-strong: #ece6d8; --btn-strong-fg: #0b1511;
+    --overlay: rgba(4, 10, 7, .78);
+    color-scheme: dark;
+  }
+}
+:root[data-theme="dark"] {
+  --bg: #0b1511; --fg: #ece6d8; --muted: #93a398;
+  --felt: #18503a; --felt-deep: #113d2c;
+  --on-felt: #f3ebdc; --on-felt-muted: rgba(243, 235, 220, .6);
+  --rail: rgba(243, 235, 220, .3); --ghost: rgba(243, 235, 220, .1);
+  --wood: #e2bd82; --wood-dark: #b08a52; --head: #d8463a; --accent: #d8463a;
+  --btn: #1a2a21; --btn-fg: #ece6d8; --btn-border: rgba(236, 230, 216, .16);
+  --btn-strong: #ece6d8; --btn-strong-fg: #0b1511;
+  --overlay: rgba(4, 10, 7, .78);
+  color-scheme: dark;
+}
+
+html, body { height: 100%; }
+html { padding-top: env(safe-area-inset-top, 0px); padding-bottom: env(safe-area-inset-bottom, 0px); box-sizing: border-box; }
+body {
+  margin: 0; background: var(--bg); color: var(--fg);
+  font-family: var(--body); font-size: 15px; line-height: 1.3;
+  -webkit-text-size-adjust: 100%; -webkit-tap-highlight-color: transparent;
+  overscroll-behavior: none;
+}
+* { box-sizing: border-box; }
+button { font: inherit; color: inherit; cursor: pointer; }
+button:focus-visible { outline: 3px solid var(--accent); outline-offset: 2px; }
+
+.app {
+  height: 100%; max-width: 560px; margin: 0 auto;
+  padding-block: 10px 12px; padding-inline: 16px;
+  display: flex; flex-direction: column; gap: 10px; min-height: 0;
+}
+
+/* Cabecera */
+.top { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.brand { display: flex; align-items: baseline; gap: 8px; min-width: 0; }
+.brand h1 {
+  margin: 0; font-family: var(--display); font-weight: 800; font-size: 26px; letter-spacing: -.02em; line-height: 1;
+}
+.brand span { color: var(--muted); font-size: 12px; text-transform: uppercase; letter-spacing: .08em; font-weight: 700; }
+.seg { display: inline-flex; border: 1px solid var(--btn-border); border-radius: 999px; padding: 3px; background: var(--btn); }
+.seg button {
+  border: 0; background: transparent; border-radius: 999px; padding: 6px 12px;
+  font-weight: 700; font-size: 13px; color: var(--muted); min-height: 32px;
+}
+.seg button[aria-pressed="true"] { background: var(--btn-strong); color: var(--btn-strong-fg); }
+
+/* Mesa */
+.table {
+  flex: 1 1 auto; min-height: 0;
+  background: radial-gradient(120% 90% at 50% 0%, var(--felt) 0%, var(--felt-deep) 100%);
+  color: var(--on-felt); border-radius: 22px;
+  padding: 12px 10px 8px; display: flex; flex-direction: column; gap: 6px;
+  box-shadow: inset 0 0 0 1px rgba(255,255,255,.06), inset 0 2px 18px rgba(0,0,0,.25);
+}
+.heads { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.head { text-align: center; min-width: 0; }
+.head h2 {
+  margin: 0; font-family: var(--display); font-weight: 700; font-size: 18px; letter-spacing: .01em;
+  white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+}
+.head .num {
+  display: block; font-family: var(--display); font-weight: 800; font-size: 48px; line-height: 1;
+  font-variant-numeric: tabular-nums; letter-spacing: -.03em; margin-top: 2px;
+  transition: transform .18s ease;
+}
+.head .num.bump { transform: scale(1.12); }
+.head .phase {
+  display: inline-block; font-size: 11px; text-transform: uppercase; letter-spacing: .12em; font-weight: 700;
+  color: var(--on-felt-muted); margin-top: 4px;
+}
+.head.leader .phase { color: var(--wood); }
+
+.board { flex: 1 1 auto; min-height: 0; display: flex; justify-content: center; }
+.board svg { height: 100%; width: auto; max-width: 100%; display: block; }
+.stick { stroke: var(--wood); stroke-width: 7; stroke-linecap: round; fill: none; }
+.stick-shade { stroke: var(--wood-dark); stroke-width: 7; stroke-linecap: round; fill: none; opacity: .45; }
+.headc { fill: var(--head); }
+.ghost { stroke: var(--ghost); stroke-width: 7; stroke-linecap: round; fill: none; }
+.rail { stroke: var(--rail); stroke-width: 2.5; stroke-dasharray: 10 8; stroke-linecap: round; }
+.lab { fill: var(--on-felt-muted); font-family: var(--body); font-weight: 700; font-size: 12px; letter-spacing: 2px; }
+.pop { transform-box: fill-box; transform-origin: center; animation: pop .22s cubic-bezier(.2,.9,.3,1.3) both; }
+@keyframes pop { from { transform: scale(.4) rotate(-12deg); opacity: 0 } to { transform: scale(1) rotate(0); opacity: 1 } }
+
+/* Controles */
+.controls { display: grid; grid-template-columns: 1fr 1fr; gap: 10px; }
+.ctl { display: grid; grid-template-columns: 1fr 2fr; gap: 8px; }
+.ctl button {
+  border: 1px solid var(--btn-border); border-radius: 16px; min-height: 64px;
+  font-family: var(--display); font-weight: 800; font-size: 28px; line-height: 1;
+  display: grid; place-items: center; user-select: none; -webkit-user-select: none; touch-action: manipulation;
+  transition: transform .08s ease, opacity .15s ease;
+}
+.ctl button:active { transform: scale(.96); }
+.ctl .minus { background: var(--btn); color: var(--btn-fg); }
+.ctl .plus { background: var(--btn-strong); color: var(--btn-strong-fg); border-color: transparent; }
+.ctl button:disabled { opacity: .35; cursor: default; }
+.ctl .plus small { font-family: var(--body); font-weight: 700; font-size: 11px; letter-spacing: .1em; text-transform: uppercase; opacity: .7; margin-top: 4px; }
+.row { display: flex; gap: 10px; }
+.row button {
+  flex: 1; border: 1px solid var(--btn-border); background: var(--btn); color: var(--btn-fg);
+  border-radius: 12px; min-height: 42px; font-weight: 700; font-size: 14px;
+}
+.row button:disabled { opacity: .4; cursor: default; }
+.row .danger { color: var(--accent); }
+
+/* Capas */
+.overlay {
+  position: fixed; inset: 0; background: var(--overlay); display: grid; place-items: center;
+  padding: 24px; z-index: 10;
+}
+.card {
+  background: var(--bg); color: var(--fg); border-radius: 20px; padding: 24px 22px; width: min(100%, 360px);
+  text-align: center; box-shadow: 0 20px 60px rgba(0,0,0,.35);
+}
+.card h3 { margin: 0; font-family: var(--display); font-weight: 800; font-size: 30px; letter-spacing: -.02em; text-wrap: balance; }
+.card p { margin: 8px 0 18px; color: var(--muted); }
+.card .actions { display: flex; gap: 10px; }
+.card .actions button {
+  flex: 1; border-radius: 12px; min-height: 46px; font-weight: 700; border: 1px solid var(--btn-border); background: var(--btn); color: var(--btn-fg);
+}
+.card .actions .primary { background: var(--btn-strong); color: var(--btn-strong-fg); border-color: transparent; }
+.card .big {
+  font-family: var(--display); font-weight: 800; font-size: 20px; color: var(--muted); margin-bottom: 4px; letter-spacing: .02em;
+}
+
+@media (max-height: 640px) {
+  .head .num { font-size: 38px; }
+  .ctl button { min-height: 54px; font-size: 24px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  .pop { animation: none; }
+  .head .num { transition: none; }
+}
+</style>
+
+</head>
+<body>
+<div class="app">
+  <header class="top">
+    <div class="brand"><h1>Truco</h1><span>marcador</span></div>
+    <div class="seg" role="group" aria-label="Puntos de la partida">
+      <button type="button" id="lim30" data-limit="30" aria-pressed="true">30</button>
+      <button type="button" id="lim40" data-limit="40" aria-pressed="false">40</button>
+    </div>
+  </header>
+
+  <section class="table" aria-label="Mesa">
+    <div class="heads">
+      <div class="head" id="head0">
+        <h2>Nosotros</h2>
+        <span class="num" id="num0">0</span>
+        <span class="phase" id="phase0">malas</span>
+      </div>
+      <div class="head" id="head1">
+        <h2>Ellos</h2>
+        <span class="num" id="num1">0</span>
+        <span class="phase" id="phase1">malas</span>
+      </div>
+    </div>
+    <div class="board"><svg id="board" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Fósforos de la partida"></svg></div>
+  </section>
+
+  <footer class="controls" aria-label="Controles">
+    <div class="ctl">
+      <button type="button" class="minus" id="minus0" aria-label="Restar un punto a Nosotros">−</button>
+      <button type="button" class="plus" id="plus0" aria-label="Sumar un punto a Nosotros">+1<small>nosotros</small></button>
+    </div>
+    <div class="ctl">
+      <button type="button" class="minus" id="minus1" aria-label="Restar un punto a Ellos">−</button>
+      <button type="button" class="plus" id="plus1" aria-label="Sumar un punto a Ellos">+1<small>ellos</small></button>
+    </div>
+    <div class="row" style="grid-column: 1 / -1">
+      <button type="button" id="undo" disabled>Deshacer</button>
+      <button type="button" id="reset" class="danger">Reiniciar</button>
+    </div>
+  </footer>
+</div>
+
+<div class="overlay" id="confirm" hidden>
+  <div class="card">
+    <h3>¿Reiniciar la partida?</h3>
+    <p>Se borran los puntos de los dos equipos.</p>
+    <div class="actions">
+      <button type="button" id="confirmNo">No</button>
+      <button type="button" id="confirmYes" class="primary">Sí, reiniciar</button>
+    </div>
+  </div>
+</div>
+
+<div class="overlay" id="winner" hidden>
+  <div class="card">
+    <div class="big" id="winScore">30 – 0</div>
+    <h3 id="winTitle">¡Ganó Nosotros!</h3>
+    <p>Partida terminada.</p>
+    <div class="actions">
+      <button type="button" id="winUndo">Deshacer</button>
+      <button type="button" id="winNew" class="primary">Nueva partida</button>
+    </div>
+  </div>
+</div>
+
+<script>
+(function () {
+  var KEY = 'truco-marcador-v1';
+  var NAMES = ['Nosotros', 'Ellos'];
+  var state = { s: [0, 0], limit: 30, hist: [] };
+
+  function load(saved) {
+    var raw = null;
+    try { raw = saved || JSON.parse(localStorage.getItem(KEY) || 'null'); } catch (e) { raw = null; }
+    if (raw && Array.isArray(raw.s) && (raw.limit === 30 || raw.limit === 40)) {
+      state.limit = raw.limit;
+      state.s = [clamp(raw.s[0]), clamp(raw.s[1])];
+      state.hist = Array.isArray(raw.hist) ? raw.hist.slice(-60) : [];
+    }
+  }
+  function save() { try { localStorage.setItem(KEY, JSON.stringify(state)); } catch (e) {} }
+  function clamp(n) { n = Number(n) || 0; return Math.max(0, Math.min(state.limit, Math.round(n))); }
+
+  // Cuántos fósforos van en cada mitad (malas / buenas) para un puntaje dado.
+  function split(score, limit) {
+    var half = limit / 2;
+    return { malas: Math.min(score, half), buenas: Math.max(0, score - half) };
+  }
+
+  /* --- Dibujo --- */
+  var CELL = 100, GAP = 34, COLS = [66, 206], W = 272;
+  function jitter(seed, amp) { var x = Math.sin(seed * 9301 + 49297) * 233280; return (x - Math.floor(x)) * 2 * amp - amp; }
+
+  function stickGeom(col, square, pos) {
+    var x0 = COLS[col] - 38, x1 = COLS[col] + 38;
+    var y0 = square * CELL + 12, y1 = square * CELL + 88;
+    var g = [
+      [x0, y1, x0, y0],   // 1: izquierda
+      [x0, y0, x1, y0],   // 2: arriba
+      [x1, y0, x1, y1],   // 3: derecha
+      [x1, y1, x0, y1],   // 4: abajo
+      [x0, y1, x1, y0]    // 5: diagonal
+    ][pos];
+    return g;
+  }
+  function squareRow(half, idx, n) { return half === 0 ? idx : n + idx; } // n = cuadros por mitad
+  function yOffset(half) { return half === 0 ? 0 : GAP; }
+
+  function drawBoard(pop) {
+    var svg = document.getElementById('board');
+    var n = state.limit / 10;              // cuadros por mitad: 3 para 30, 4 para 40
+    var H = 2 * n * CELL + GAP;
+    svg.setAttribute('viewBox', '0 0 ' + W + ' ' + H);
+    var out = [];
+    // Raya de malas / buenas
+    var yr = n * CELL + GAP / 2;
+    out.push('<line class="rail" x1="10" y1="' + yr + '" x2="' + (W - 10) + '" y2="' + yr + '"/>');
+    out.push('<text class="lab" x="' + (W / 2) + '" y="' + (yr - 7) + '" text-anchor="middle">MALAS</text>');
+    out.push('<text class="lab" x="' + (W / 2) + '" y="' + (yr + 15) + '" text-anchor="middle">BUENAS</text>');
+    // Fantasmas y fósforos
+    for (var col = 0; col < 2; col++) {
+      var parts = split(state.s[col], state.limit);
+      for (var half = 0; half < 2; half++) {
+        var count = half === 0 ? parts.malas : parts.buenas;
+        for (var i = 0; i < n * 5; i++) {
+          var sq = Math.floor(i / 5), pos = i % 5;
+          var g = stickGeom(col, squareRow(half, sq, n), pos);
+          var dy = yOffset(half);
+          var lit = i < count;
+          if (!lit) {
+            out.push('<line class="ghost" x1="' + g[0] + '" y1="' + (g[1] + dy) + '" x2="' + g[2] + '" y2="' + (g[3] + dy) + '"/>');
+            continue;
+          }
+          var seed = col * 1000 + half * 100 + i;
+          var jx = jitter(seed, 1.6), jy = jitter(seed + 7, 1.6), rot = jitter(seed + 13, 2.5);
+          var cx = (g[0] + g[2]) / 2 + jx, cy = (g[1] + g[3]) / 2 + dy + jy;
+          var isNew = pop && pop.col === col && i === count - 1 && (half === 1 || parts.buenas === 0);
+          out.push('<g transform="translate(' + jx + ',' + jy + ') rotate(' + rot + ' ' + cx + ' ' + cy + ')"><g class="' + (isNew ? 'pop' : '') + '">' +
+            '<line class="stick-shade" x1="' + (g[0] + 1.5) + '" y1="' + (g[1] + dy + 2) + '" x2="' + (g[2] + 1.5) + '" y2="' + (g[3] + dy + 2) + '"/>' +
+            '<line class="stick" x1="' + g[0] + '" y1="' + (g[1] + dy) + '" x2="' + g[2] + '" y2="' + (g[3] + dy) + '"/>' +
+            '<circle class="headc" cx="' + g[2] + '" cy="' + (g[3] + dy) + '" r="6.5"/>' +
+            '</g></g>');
+        }
+      }
+    }
+    svg.innerHTML = out.join('');
+  }
+
+  /* --- Interfaz --- */
+  function render(pop) {
+    for (var t = 0; t < 2; t++) {
+      var s = state.s[t];
+      var num = document.getElementById('num' + t);
+      if (num.textContent !== String(s)) {
+        num.textContent = s;
+        num.classList.add('bump');
+        setTimeout((function (el) { return function () { el.classList.remove('bump'); }; })(num), 180);
+      }
+      document.getElementById('phase' + t).textContent = s >= state.limit ? 'ganó' : (s >= state.limit / 2 ? 'buenas' : 'malas');
+      document.getElementById('plus' + t).disabled = s >= state.limit;
+      document.getElementById('minus' + t).disabled = s <= 0;
+      var other = state.s[1 - t];
+      document.getElementById('head' + t).classList.toggle('leader', s > other);
+    }
+    document.getElementById('lim30').setAttribute('aria-pressed', state.limit === 30 ? 'true' : 'false');
+    document.getElementById('lim40').setAttribute('aria-pressed', state.limit === 40 ? 'true' : 'false');
+    document.getElementById('undo').disabled = state.hist.length === 0;
+    drawBoard(pop);
+
+    var w = state.s[0] >= state.limit ? 0 : (state.s[1] >= state.limit ? 1 : -1);
+    var win = document.getElementById('winner');
+    if (w >= 0) {
+      document.getElementById('winTitle').textContent = '¡Ganó ' + NAMES[w] + '!';
+      document.getElementById('winScore').textContent = state.s[0] + ' – ' + state.s[1];
+      win.hidden = false;
+    } else {
+      win.hidden = true;
+    }
+    save();
+  }
+
+  function pushHist() { state.hist.push(state.s.slice()); if (state.hist.length > 60) state.hist.shift(); }
+  function add(t, d) {
+    var next = clamp(state.s[t] + d);
+    if (next === state.s[t]) return;
+    pushHist();
+    state.s[t] = next;
+    render(d > 0 ? { col: t } : null);
+  }
+  function undo() {
+    var prev = state.hist.pop();
+    if (!prev) return;
+    state.s = [clamp(prev[0]), clamp(prev[1])];
+    render(null);
+  }
+  function reset() { state.s = [0, 0]; state.hist = []; render(null); }
+  function setLimit(l) {
+    if (l === state.limit) return;
+    pushHist();
+    state.limit = l;
+    state.s = [clamp(state.s[0]), clamp(state.s[1])];
+    render(null);
+  }
+
+  function on(id, fn) { document.getElementById(id).addEventListener('click', fn); }
+  on('plus0', function () { add(0, 1); });
+  on('plus1', function () { add(1, 1); });
+  on('minus0', function () { add(0, -1); });
+  on('minus1', function () { add(1, -1); });
+  on('undo', undo);
+  on('winUndo', undo);
+  on('lim30', function () { setLimit(30); });
+  on('lim40', function () { setLimit(40); });
+  on('reset', function () { document.getElementById('confirm').hidden = false; });
+  on('confirmNo', function () { document.getElementById('confirm').hidden = true; });
+  on('confirmYes', function () { document.getElementById('confirm').hidden = true; reset(); });
+  on('winNew', reset);
+
+  // Mantener la pantalla encendida mientras se juega (si el navegador lo permite).
+  var lock = null;
+  function wake() {
+    if (!navigator.wakeLock || document.visibilityState !== 'visible') return;
+    navigator.wakeLock.request('screen').then(function (l) { lock = l; }).catch(function () {});
+  }
+  document.addEventListener('visibilitychange', wake);
+  document.addEventListener('click', function once() { wake(); document.removeEventListener('click', once); });
+
+  function start(data) {
+    load(data && data.state ? data.state : null);
+    render(null);
+  }
+  if (window.claude && window.claude.hot) {
+    if (window.claude.hot.snapshot) window.claude.hot.snapshot(function () { return { state: state }; });
+    if (window.claude.hot.ready) window.claude.hot.ready(start); else start(window.claude.hot.data || {});
+  } else {
+    start({});
+  }
+})();
+</script>
+
+<script>
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', function () { navigator.serviceWorker.register('sw.js'); });
+}
+</script>
+</body>
+</html>
